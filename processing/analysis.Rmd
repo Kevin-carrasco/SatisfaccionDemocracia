@@ -1,0 +1,217 @@
+---
+title: "Satisfacción con la democracia en países de América"
+author: "Roque Alfaro, Francisco Delgado, Kevin Carrasco, Sebastian Cortinez"
+date: "14 de octubre de 2019"
+output:
+  html_document:
+    highlight: tango # probar espresso
+    number_sections: TRUE # numera las secciones y subsecciones
+bibliography: ../input/bib/Citas.bib
+link-citations: yes
+csl: ../input/bib/apa.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r results="hide", echo=FALSE, warning=FALSE, message=FALSE}
+##install.packages("pacman")
+pacman::p_load(lme4,
+               reghelper,
+               ggeffects,
+               haven,
+               stargazer,
+               ggplot2, # gráficos
+               dplyr, # manipulacion de datos
+               texreg,
+               ggeffects,
+               corrplot,
+               sjPlot,
+               Hmisc,
+               pander,
+               car,
+               webshot,
+               summarytools,
+               ggcorrplot,
+               kableExtra
+               ) # paquetes a cargar
+webshot::install_phantomjs( force = T)
+
+```
+Cargar bases procesadas
+```{r}
+data_tot2 = read.csv("../input/data/proc/data_tot2_proc.csv")
+data_tot3 = read.csv("../input/data/proc/data_tot3_proc.csv")
+```
+
+__Tabla 1__
+
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+data_tot2$Sexo<-as.numeric(data_tot2$Sexo)
+data_tabla1=data_tot2 %>%
+  dplyr::select(Edad,Sexo,Democracia,Corrupcion,Economia)
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla1.html")
+stargazer(data_tabla1, type = "html", digits=1)
+sink()
+
+```
+
+__Gráfico 1__ 
+
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+data_tot2$Sexo<-car::Recode(data_tot2$Sexo, "1=1;2=2")
+data_tot2$Sexo<-factor(c(0,1),labels=c("Hombre","Mujer"))
+
+grafico_circulos=data_tot2 %>% select(Democracia, Corrupcion, Satisfaccion, Economia, Edad) %>% cor()
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+graf1<-ggcorrplot(grafico_circulos, method = "circle", hc.order = TRUE, type = "lower",
+   lab = TRUE)
+
+ggsave("../output/graphs/grafico1.png", plot(graf1))
+
+```
+
+__Tabla 2__
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+cor_intraclase = lmer(Democracia ~ 1 + (1 | pais), data = data_tot2)
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla2.html")
+reghelper::ICC(cor_intraclase, type = "html")
+sink()
+```
+
+__Tabla 3__
+
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+## regresion nivel 1
+reg_lvl1.1 = lmer(Democracia ~ 1 + Corrupcion + Satisfaccion + Economia + Educacion_Niveles + Edad_Niveles + Sexo + (1 | pais), data = data_tot2)
+
+reg_lvl1.2 = lmer(Democracia ~ 1 + Corrupcion + Satisfaccion + Economia + Educacion_Niveles + Edad_Niveles + Sexo + Soborno + (1 | pais), data = data_tot3)
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla3.html")
+htmlreg(list(reg_lvl1.1,reg_lvl1.2))
+sink()
+
+```
+
+__Tabla 4__
+
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+data_tot2 <- data_tot2 %>%
+  group_by(pais) %>%
+  mutate(meancor = mean(Corrupcion))
+
+data_tot3 <- data_tot3 %>%
+  group_by(pais) %>%
+  mutate(meancor = mean(Corrupcion))
+
+data_tot2 <- data_tot2 %>%
+  group_by(pais) %>%
+  mutate(meansas = mean(Satisfaccion))
+
+data_tot3 <- data_tot3 %>%
+  group_by(pais) %>%
+  mutate(meansas = mean(Satisfaccion))
+
+data_tot2 <- data_tot2 %>%
+  group_by(pais) %>%
+  mutate(meaneco = mean(Economia))
+
+data_tot3 <- data_tot3 %>%
+  group_by(pais) %>%
+  mutate(meaneco = mean(Economia))
+
+data_tot2$Gini<-as.numeric(data_tot2$Gini)
+data_tot3$Gini<-as.numeric(data_tot3$Gini)
+
+reg_lvl2.1 = lmer(Democracia ~ 1 + meancor + meansas + meaneco + Gini + Cor.politic + (1 | pais), data = data_tot2)
+reg_lvl2.2 = lmer(Democracia ~ 1 + meancor + meansas + meaneco + Gini + Cor.politic + (1 | pais), data = data_tot3)
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla4.html")
+htmlreg(list(reg_lvl2.1,reg_lvl2.2))
+sink()
+
+```
+
+__Tabla 5__ 
+
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+reg_aleatoria.1 = lmer(Democracia ~ 1 + Corrupcion + Satisfaccion + Economia + Gini + meancor + meansas + meaneco + Cor.politic + (1 | pais), data = data_tot2)
+reg_aleatoria.1.2 = lmer(Democracia ~ 1 + Corrupcion + Satisfaccion + Economia + Gini + meancor + meansas + meaneco + Cor.politic + (1 + Corrupcion | pais), data = data_tot2)
+reg_aleatoria.2 = lmer(Democracia ~ 1 + Corrupcion + Satisfaccion + Economia + Gini + meancor + meansas + meaneco + Cor.politic + Soborno + (1 | pais), data = data_tot3)
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla5.html")
+htmlreg(list(reg_aleatoria.1,reg_aleatoria.2))
+sink()
+```
+
+__Gráfico 2__
+
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+reg_data=lmer(Democracia ~ 1 + Corrupcion + Economia +( 1 + Corrupcion | pais), data = data_tot2)
+graf2=ggpredict(reg_data, terms = c("Corrupcion","pais [sample=9]"), type="re")
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+plot(graf2)
+
+ggsave("../output/graphs/grafico2.png", plot(graf2))
+
+```
+
+__Tabla 6__
+
+```{r echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+reg_aleatoria.3 = lmer(Democracia ~ 1 + Corrupcion + Sexo + Satisfaccion + Economia + Gini + meancor + meansas + meaneco + Cor.politic + (1 + meancor | pais), data = data_tot2)
+reg_aleatoria.4 = lmer(Democracia ~ 1 + Corrupcion + Sexo + Satisfaccion + Economia + Gini + meancor + meansas + meaneco + Cor.politic + Soborno + (1 + meancor | pais), data = data_tot3)
+
+reg_aleatoria.1.2.2 = lmer(Democracia ~ 1 + Corrupcion + Satisfaccion + Economia + Gini + meancor + meansas + meaneco + Cor.politic + Corrupcion*meancor + (1 + Corrupcion | pais), data = data_tot2)
+
+```
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla6.html")
+htmlreg(list(reg_aleatoria.3,reg_aleatoria.4))
+sink()
+
+```
+
+__Tabla 7__
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla7.html")
+pander(anova(reg_aleatoria.1,reg_aleatoria.1.2))
+sink()
+
+```
+
+__Tabla 8__ 
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+sink("../output/tables/tabla8.html")
+htmlreg(list(reg_aleatoria.1,reg_aleatoria.1.2,reg_aleatoria.1.2.2))
+sink()
+
+```
+
+__Plot__
+
+```{r echo="asis", results="asis", warning=FALSE, message=FALSE}
+plot_model(reg_aleatoria.1.2.2, type = "int")
+
+ggsave("../output/graphs/plot.png", plot_model(reg_aleatoria.1.2.2, type = "int"))
+```

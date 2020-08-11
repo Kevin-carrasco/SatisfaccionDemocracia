@@ -1,0 +1,66 @@
+---
+title: "Satisfacción con la democracia en países de América"
+author: "Roque Alfaro, Francisco Delgado, Kevin Carrasco, Sebastian Cortinez"
+date: "14 de octubre de 2019"
+output:
+  html_document:
+    highlight: tango # probar espresso
+    number_sections: TRUE # numera las secciones y subsecciones
+bibliography: ../input/bib/Citas.bib
+link-citations: yes
+csl: ../input/bib/apa.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r results="hide", echo=FALSE, warning=FALSE, message=FALSE}
+##install.packages("pacman")
+pacman::p_load(lme4,
+               reghelper,
+               ggeffects,
+               haven,
+               stargazer,
+               ggplot2, # gráficos
+               dplyr, # manipulacion de datos
+               texreg,
+               ggeffects,
+               corrplot,
+               sjPlot,
+               Hmisc,
+               pander,
+               car
+               ) # paquetes a cargar
+
+
+data_tot2 = read.csv("../input/data/original/data_tot.csv")
+data_tot3 = read.csv("../input/data/original/data_tot3.csv")
+
+## Categorizar edad
+
+data_tot2$Edad_Niveles<-car::Recode(data_tot2$Edad, "16:25=1;26:40=2;41:60=3;61:112=4")
+data_tot2$Edad_Niveles<-factor(data_tot2$Edad_Niveles,labels=c("16 a 25","26 a 40","41 a 60","61 o más"))
+data_tot2$Edad_Niveles<-as.numeric(data_tot2$Edad_Niveles)
+
+data_tot3$Edad_Niveles<-car::Recode(data_tot3$Edad, "16:25=1;26:40=2;41:60=3;61:112=4")
+data_tot3$Edad_Niveles<-factor(data_tot3$Edad_Niveles,labels=c("16 a 25","26 a 40","41 a 60","61 o más"))
+data_tot3$Edad_Niveles<-as.numeric(data_tot3$Edad_Niveles) 
+
+## Recodificar satisfaccion con la democracia
+
+data_tot2$Democracia<-car::Recode(data_tot2$Democracia, "1=4;2=3;3=2;4=1")
+data_tot3$Democracia<-car::Recode(data_tot3$Democracia, "1=4;2=3;3=2;4=1")
+
+## Recodificar satisfaccion con la Satisfaccion
+
+data_tot2$Satisfaccion<-car::Recode(data_tot2$Satisfaccion, "1=4;2=3;3=2;4=1")
+data_tot3$Satisfaccion<-car::Recode(data_tot3$Satisfaccion, "1=4;2=3;3=2;4=1")
+```
+Guardar bases de datos procesadas
+```{r}
+write.csv(data_tot2, file="../input/data/proc/data_tot2_proc.csv", row.names = F)
+write.csv(data_tot3, file="../input/data/proc/data_tot3_proc.csv", row.names = F)
+```
+
+
