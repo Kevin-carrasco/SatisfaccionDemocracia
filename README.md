@@ -1,2 +1,6 @@
-# SatisfaccionDemocracia
-Proyecto satisfacción con la democracia y corrupción política en países de América
+# ciencias-abiertas
+Asignatura "ciencias abiertas" sociologia u de chile. Primer semestre 2020.
+
+#Actividades
+
+1) Citar en Texto plano
